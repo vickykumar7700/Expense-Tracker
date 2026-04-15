@@ -11,12 +11,22 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const [usersRes, expRes] = await Promise.all([
-          axios.get(`${API_URL}/api/auth/users`),
-          axios.get(`${API_URL}/api/expense/all`)
+        const token = sessionStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        const [usersRes, expRes, incRes] = await Promise.all([
+          axios.get(`${API_URL}/api/auth/users`, { headers }),
+          axios.get(`${API_URL}/api/expense/all`, { headers }),
+          axios.get(`${API_URL}/api/income/all`, { headers })
         ]);
+        
         setUsers(usersRes.data);
-        setExpenses(expRes.data);
+        
+        const allExpenses = expRes.data.map(e => ({ ...e, type: 'expense' }));
+        const allIncomes = incRes.data.map(i => ({ ...i, type: 'income' }));
+        const combined = [...allExpenses, ...allIncomes].sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        setExpenses(combined);
       } catch (err) {
         console.error(err);
       } finally {
@@ -26,10 +36,15 @@ const AdminPanel = () => {
     fetchAdminData();
   }, []);
 
-  const handleDeleteExpense = async (id) => {
+  const handleDeleteTransaction = async (id, type) => {
     try {
-      if (!window.confirm("Are you sure you want to delete this expense?")) return;
-      await axios.delete(`${API_URL}/api/expense/${id}`);
+      if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+      const token = sessionStorage.getItem('token');
+      const endpoint = type === 'income' ? '/api/income' : '/api/expense';
+      
+      await axios.delete(`${API_URL}${endpoint}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setExpenses(expenses.filter(ex => ex._id !== id));
     } catch (err) {
       console.error(err);
@@ -70,7 +85,7 @@ const AdminPanel = () => {
         </div>
 
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '20px' }}>All Platform Expenses</h3>
+          <h3 style={{ marginBottom: '20px' }}>All Platform Transactions</h3>
           <div className="expense-list">
             {expenses.map(exp => (
               <div key={exp._id} className="expense-item glass-panel">
@@ -78,9 +93,9 @@ const AdminPanel = () => {
                   <div className="title">{exp.title}</div>
                   <div className="date">By: {exp.userId?.name} | {new Date(exp.date).toLocaleDateString()}</div>
                 </div>
-                <div className="expense-amount">
-                  ₹{exp.amount}
-                  <button className="delete-btn" onClick={() => handleDeleteExpense(exp._id)}>
+                <div className="expense-amount" style={{ color: exp.type === 'income' ? 'var(--success)' : 'var(--danger)'}}>
+                  {exp.type === 'income' ? '+' : '-'} ₹{exp.amount}
+                  <button className="delete-btn" onClick={() => handleDeleteTransaction(exp._id, exp.type)}>
                     <Trash2 size={16} />
                   </button>
                 </div>

@@ -66,7 +66,8 @@ const Login = () => {
             <input 
               type="email" 
               className="light-form-input" 
-              placeholder="Email Address"
+              placeholder="enter emailid"
+              autoComplete="off"
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
@@ -79,7 +80,8 @@ const Login = () => {
               <input 
                 type={showPassword ? "text" : "password"} 
                 className="light-form-input" 
-                placeholder="Password"
+                placeholder="enter password"
+                autoComplete="new-password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 

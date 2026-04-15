@@ -8,6 +8,7 @@ import API_URL from '../config/api';
 const Expense = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,31 +21,43 @@ const Expense = () => {
   const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!title || !amount) return;
+    setError('');
     try {
+      const token = sessionStorage.getItem('token');
       await axios.post(`${API_URL}/api/expense`, { 
         title, 
         amount: Number(amount), 
         category: title, // Using Input as category for auto icon matching
         type: 'expense',
         date
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       setTitle('');
       setAmount('');
       setDate(new Date().toISOString().split('T')[0]);
       setIsModalOpen(false);
+      setError('');
       fetchTransactions();
     } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add expense';
+      setError(errorMsg);
       console.error(err);
     }
   };
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/expense`);
+      const token = sessionStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/expense`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       // Filter for expense only
       setTransactions(res.data.filter(t => t.type === 'expense' || !t.type));
     } catch (err) {
-      console.error(err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch expenses';
+      console.error('Fetch error:', err);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -174,6 +187,12 @@ const Expense = () => {
               <X size={20} />
             </button>
             <h2 style={{ marginTop: 0, marginBottom: '24px', fontSize: '1.4rem' }}>Add Expense</h2>
+            
+            {error && (
+              <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.9rem' }}>
+                {error}
+              </div>
+            )}
             
             <form onSubmit={handleAddExpense}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '24px' }}>

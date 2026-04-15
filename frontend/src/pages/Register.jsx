@@ -8,7 +8,6 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [profession, setProfession] = useState(''); // New Profile field
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +20,7 @@ const Register = () => {
     setError('');
     
     try {
-      await axios.post(`${API_URL}/api/auth/register`, { name, email, password, profession });
+      await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -61,7 +60,8 @@ const Register = () => {
             <input 
               type="email" 
               className="light-form-input" 
-              placeholder="Email Address"
+              placeholder="Enter email Id"
+              autoComplete="off"
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
@@ -74,7 +74,8 @@ const Register = () => {
               <input 
                 type={showPassword ? "text" : "password"} 
                 className="light-form-input" 
-                placeholder="Password"
+                placeholder="Enter password"
+                autoComplete="new-password"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
@@ -83,17 +84,6 @@ const Register = () => {
                 <Eye size={20} color="#FF7A00"/>
               </div>
             </div>
-          </div>
-
-          <div className="light-form-group">
-            <label>Profession</label>
-            <input 
-              type="text" 
-              className="light-form-input" 
-              placeholder="E.g. Software Engineer"
-              value={profession} 
-              onChange={(e) => setProfession(e.target.value)} 
-            />
           </div>
 
           <button type="submit" className="light-btn-primary" disabled={loading} style={{ marginTop: '20px' }}>

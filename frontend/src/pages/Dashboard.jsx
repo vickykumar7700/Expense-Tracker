@@ -19,8 +19,18 @@ const Dashboard = () => {
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(`${API_URL}/api/expense`);
-      setTransactions(res.data);
+      const token = sessionStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const [expenseRes, incomeRes] = await Promise.all([
+        axios.get(`${API_URL}/api/expense`, { headers }),
+        axios.get(`${API_URL}/api/income`, { headers })
+      ]);
+      
+      const expenses = expenseRes.data.map(e => ({ ...e, apiType: 'expense' }));
+      const incomes = incomeRes.data.map(i => ({ ...i, apiType: 'income', type: 'income' }));
+      
+      setTransactions([...expenses, ...incomes].sort((a, b) => new Date(b.date) - new Date(a.date)));
     } catch (err) {
       console.error(err);
     } finally {
@@ -40,11 +50,15 @@ const Dashboard = () => {
     if (!title || !amount) return;
     
     try {
-      await axios.post(`${API_URL}/api/expense`, { 
+      const token = sessionStorage.getItem('token');
+      const endpoint = type === 'income' ? '/api/income' : '/api/expense';
+      await axios.post(`${API_URL}${endpoint}`, { 
         title, 
         amount: Number(amount), 
         category,
         type
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setTitle('');
       setAmount('');
@@ -54,9 +68,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, apiType) => {
     try {
-      await axios.delete(`${API_URL}/api/expense/${id}`);
+      const token = sessionStorage.getItem('token');
+      const endpoint = apiType === 'income' ? '/api/income' : '/api/expense';
+      await axios.delete(`${API_URL}${endpoint}/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTransactions(transactions.filter(t => t._id !== id));
     } catch (err) {
       console.error(err);
@@ -250,7 +268,7 @@ const Dashboard = () => {
                     </div>
                     <div className="expense-amount" style={{ color: t.type === 'income' ? 'var(--success)' : 'var(--danger)' }}>
                       {t.type === 'income' ? '+' : '-'} ₹{t.amount}
-                      <button className="delete-btn" onClick={() => handleDelete(t._id)} style={{ marginLeft: '10px' }}>
+                      <button className="delete-btn" onClick={() => handleDelete(t._id, t.apiType)} style={{ marginLeft: '10px' }}>
                         <Trash2 size={16} />
                       </button>
                     </div>
